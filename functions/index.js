@@ -6,7 +6,7 @@
 
 // });
 
-const { createLocalServer } = require('./server');
+const { createLocalServer } = require('./bundle/server');
 
 const server = createLocalServer();
 
