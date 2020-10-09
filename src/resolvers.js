@@ -9,9 +9,18 @@ const connection = client.connect();
 const bcrypt = require('bcrypt');
 //bcrypt.compareSync(myPlaintextPassword, '$2b$10$l5oTN8bD74gbZE5nTE9Y4efIuNMhh2is4DrmgIPp/t3QvD9aQt9LS');
 
-connection.then((db) => {
-	db.db(DB).createCollection('users');
-	db.db(DB).createCollection('messages');
+var collections = ['users','messages']
+connection.then(async (db) => {
+	var exist = await db.db(DB).listCollections().toArray();
+	var array = [];
+	for (var i in exist) {
+		array.push(exist[i]['name'])
+	}
+	for (var i in collections){
+		if(!array.includes(collections[i])){
+			db.db(DB).createCollection(collections[i]);
+		}
+	} 
 });
 
 module.exports = {
@@ -36,6 +45,15 @@ module.exports = {
 			return new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').find({ $or: command }).toArray((err, res) => {
+						resolve(res);
+					});
+				});
+			});
+		},
+		messagesforTEST: () => {
+			return new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('messages').find().toArray((err, res) => {
 						resolve(res);
 					});
 				});
@@ -78,8 +96,8 @@ module.exports = {
 					db.db(DB).collection('messages').insertOne(
 						Object.assign(input, {
 							created_at: new Date(),
-							updated_at: new Date(),
-							last_login: null
+							is_seen: false,
+							seen_at:null,
 						}), (err, res) => {
 							resolve(res.ops[0]);
 						});

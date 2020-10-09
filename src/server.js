@@ -9,7 +9,7 @@ function createLambdaServer() {
 		typeDefs,
 		resolvers,
 		introspection: true,
-		playground: false
+		playground: true
 	});
 }
 
