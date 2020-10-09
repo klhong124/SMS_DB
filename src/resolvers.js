@@ -72,5 +72,19 @@ module.exports = {
 				});
 			});
 		},
+		createMessage: async (root, input) => {
+			return new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('messages').insertOne(
+						Object.assign(input, {
+							created_at: new Date(),
+							updated_at: new Date(),
+							last_login: null
+						}), (err, res) => {
+							resolve(res.ops[0]);
+						});
+				});
+			});
+		},
 	}
 };
