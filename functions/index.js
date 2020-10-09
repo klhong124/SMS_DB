@@ -1,6 +1,6 @@
-const { createLambdaServer } = require('./bundle/server');
+const { createLocalServer } = require('./bundle/server');
 
-const server = createLambdaServer();
+const server = createLocalServer();
 
 exports.handler = server.createHandler({
 
