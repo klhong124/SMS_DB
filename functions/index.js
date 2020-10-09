@@ -1,7 +1,15 @@
-const { createLocalServer } = require('./bundle/server');
+// const { createLambdaServer } = require('./bundle/server');
+
+// const server = createLambdaServer();
+
+// exports.handler = server.createHandler({
+
+// });
+
+const { createLocalServer } = require('./server');
 
 const server = createLocalServer();
 
-exports.handler = server.createHandler({
-
+server.listen().then(({ url }) => {
+	console.log(`🚀 Server ready at ${url}`);
 });
