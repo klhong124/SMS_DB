@@ -1,0 +1,31 @@
+{
+  "name": "sms_db",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon src/index.js",
+    "bundle": "cpx src/**/* functions/bundle"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klhong124/SMS_DB.git"
+  },
+  "author": "Ryan Kwan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/klhong124/SMS_DB/issues"
+  },
+  "homepage": "https://github.com/klhong124/SMS_DB#readme",
+  "dependencies": {
+    "apollo-server-lambda": "^2.18.2",
+    "bcrypt": "^5.0.0",
+    "dotenv": "^8.2.0",
+    "graphql": "^15.3.0",
+    "mongodb": "^3.3.3"
+  },
+  "devDependencies": {
+    "apollo-server": "^2.18.2",
+    "nodemon": "^2.0.4"
+  }
+}
