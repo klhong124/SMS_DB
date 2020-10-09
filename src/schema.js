@@ -14,7 +14,7 @@ module.exports = gql`
 	}
 	type Mutation {
 		createUser(name: String!,password:String!,number:Int!): User
-		createMessage(sender: Int!,reciever:User!,content:String!): User
+		createMessage(sender: Int!,reciever:UserInput!,content:String!): User
 	}
 
 	type User {
