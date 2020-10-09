@@ -9,7 +9,11 @@ function createLambdaServer() {
 		typeDefs,
 		resolvers,
 		introspection: true,
-		playground: true
+		playground: {
+			settings: {
+			"request.credentials": "same-origin"
+			}
+		}
 	});
 }
 
