@@ -76,18 +76,14 @@ module.exports = {
 			if (!valid) {
 				throw new Error('Invalid password')
 			}
-			user = await new Promise((resolve) => {
-				connection.then((db) => {
-					db.db(DB).collection('users').findOneAndUpdate({number:input.number}, 
-						{ $set: { last_login: new Date(), } }, 
-						{ returnOriginal: false }, 
-						(err, res) => {
-							resolve(res.value);
-						});
-				});
+			connection.then((db) => {
+				db.db(DB).collection('users').findOneAndUpdate({number:input.number}, 
+					{ $set: { last_login: new Date(), } }, 
+					{ returnOriginal: false },
+				);
 			});
 
-			const token = jwt.sign({ user: user }, process.env.JWT_SECRET, {
+			const token = jwt.sign({ user: user.id }, process.env.JWT_SECRET, {
 				expiresIn: '2h'
 			});
 
