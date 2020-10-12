@@ -87,7 +87,7 @@ module.exports = {
 				});
 			});
 
-			const token = jwt.sign({ user: user._id }, process.env.JWT_SECRET, {
+			const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
 				expiresIn: '2h'
 			});
 
