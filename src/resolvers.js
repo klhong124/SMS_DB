@@ -7,7 +7,7 @@ const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology:
 const connection = client.connect();
 
 const bcrypt = require('bcrypt');
-//bcrypt.compareSync(myPlaintextPassword, '$2b$10$l5oTN8bD74gbZE5nTE9Y4efIuNMhh2is4DrmgIPp/t3QvD9aQt9LS');
+const jwt = require('jsonwebtoken');
 
 var collections = ['users','messages']
 connection.then(async (db) => {
@@ -35,7 +35,7 @@ module.exports = {
 				});
 			});
 		},
-		users: (root, { input }) => {
+		users: (root, {input}) => {
 			var command = [];
 			Object.keys(input).forEach(function (key) {
 				obj = {}
@@ -61,6 +61,42 @@ module.exports = {
 		}
 	},
 	Mutation: {
+		login: async (root,input)=>{
+			var user =  await new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('users').findOne({number:input.number},
+					(err, res) => {
+						if (err) throw err;
+						resolve(res);
+					});
+				});
+			});
+			const valid = bcrypt.compareSync(input.password, user.password)
+			if (!valid) {
+				throw new Error('Invalid password')
+			}
+			user =  new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('users').findOneAndUpdate({number:input.number}, 
+						{ $set: { last_login: new Date(), } }, 
+						{ returnOriginal: false }, 
+						(err, res) => {
+							resolve(res.value);
+						});
+				});
+			});
+
+			const token = jwt.sign({ user: user }, process.env.JWT_SECRET, {
+				expiresIn: '2h'
+			});
+
+			return{
+				token: token,
+				user:user
+			}
+
+
+		},
 		createUser: async (root, input) => {
 			var command = [];
 			Object.keys(input).forEach(function (key) {

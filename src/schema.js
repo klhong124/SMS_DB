@@ -7,13 +7,15 @@ module.exports = gql`
 	}
 
 	scalar Date
+	scalar Token
 
 	type Query {
 		user(_id: ID,name:String): User
-		users(command:UserInput): [User]
+		users(input:UserInput): [User]
 		messagesforTEST:[Message]
 	}
 	type Mutation {
+		login(number:Int!,password:String!): Auth
 		createUser(name: String!,password:String!,number:Int!): User
 		createMessage(sender: Int!,reciever:Int!,content:String!): Message
 	}
@@ -26,6 +28,11 @@ module.exports = gql`
 		created_at: Date
 		updated_at: Date
 		last_login: Date
+	}
+
+	type Auth {
+		token: String
+		user: User
 	}
 
 	type Message{
