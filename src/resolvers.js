@@ -102,6 +102,7 @@ module.exports = {
 
 		},
 		register: async (root, input) => {
+			input.number = parseInt(input.number);
 			var command = [];
 			Object.keys(input).forEach(function (key) {
 				obj = {}; obj[key] = input[key]; command.push(obj)
