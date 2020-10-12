@@ -16,7 +16,7 @@ module.exports = gql`
 	}
 	type Mutation {
 		login(number:String!,password:String!): Auth
-		createUser(name: String!,password:String!,number:Int!): User
+		register(name: String!,password:String!,number:Int!): User
 		createMessage(sender: Int!,reciever:Int!,content:String!): Message
 	}
 

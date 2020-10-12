@@ -101,20 +101,20 @@ module.exports = {
 
 
 		},
-		createUser: async (root, input) => {
+		register: async (root, input) => {
 			var command = [];
 			Object.keys(input).forEach(function (key) {
 				obj = {}; obj[key] = input[key]; command.push(obj)
 			});
-			var checkexist = await new Promise((resolve) => {
+			var checkExist = await new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').find({ $or: command }).toArray((err, res) => {
 						resolve(res);
 					});
 				});
 			});
-			if (checkexist.length) {
-				return null
+			if (checkExist.length) {
+				throw new Error('Number used')
 			}
 			input.password ? (input.password = await bcrypt.hash(input.password, 10)) : '';
 			return new Promise((resolve) => {
