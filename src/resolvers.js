@@ -62,6 +62,7 @@ module.exports = {
 	},
 	Mutation: {
 		login: async (root,input)=>{
+			input.number = parseInt(input.number);
 			var user =  await new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').findOne({number:input.number},
