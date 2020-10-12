@@ -72,6 +72,9 @@ module.exports = {
 					});
 				});
 			});
+			if (!user) {
+				throw new Error('Number not registered')
+			}
 			const valid = bcrypt.compareSync(input.password, user.password)
 			if (!valid) {
 				throw new Error('Invalid password')
