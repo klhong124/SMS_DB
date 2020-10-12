@@ -76,7 +76,7 @@ module.exports = {
 			if (!valid) {
 				throw new Error('Invalid password')
 			}
-			user =  new Promise((resolve) => {
+			user = await new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').findOneAndUpdate({number:input.number}, 
 						{ $set: { last_login: new Date(), } }, 
