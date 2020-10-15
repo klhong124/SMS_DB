@@ -10,7 +10,7 @@ module.exports = gql`
 	scalar Token
 
 	type Query {
-		user(_id: ID,name:String): User
+		user(_id: ID,name:String,number:String): User
 		users(input:UserInput): [User]
 		messagesforTEST:[Message]
 	}

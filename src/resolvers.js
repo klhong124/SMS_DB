@@ -26,7 +26,8 @@ connection.then(async (db) => {
 module.exports = {
 	Query: {
 		user: (root, input) => {
-			input._id ? (input._id = new ObjectId(input._id)) : '';
+			if (input.number) {input.number = parseInt(input.number)};
+			if (input._id) {input._id = new ObjectId(input._id))};
 			return new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').findOne(input, (err, res) => {
