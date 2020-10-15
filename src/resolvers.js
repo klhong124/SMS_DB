@@ -9,7 +9,7 @@ const connection = client.connect();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-var collections = ['users','messages']
+var collections = ['users','conversation']
 connection.then(async (db) => {
 	var exist = await db.db(DB).listCollections().toArray();
 	var array = [];
@@ -26,63 +26,53 @@ connection.then(async (db) => {
 module.exports = {
 	Query: {
 		user: (root, input) => {
-			if (input.number) {input.number = parseInt(input.number)};
-			if (input._id) {input._id = new ObjectId(input._id))};
+			if (input._id) {input._id = new ObjectId(input._id)};
 			return new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('users').findOne(input, (err, res) => {
+					db.db(DB).collection('users').findOne(
+						Object.assign(input, {
+							is_deleted:false
+						}), (err, res) => {
 						resolve(res);
 					});
 				});
 			});
 		},
-		users: (root, {input}) => {
-			var command = [];
-			Object.keys(input).forEach(function (key) {
-				obj = {}
-				obj[key] = input[key]
-				command.push(obj)
-			});
-			return new Promise((resolve) => {
-				connection.then((db) => {
-					db.db(DB).collection('users').find({ $or: command }).toArray((err, res) => {
-						resolve(res);
-					});
-				});
-			});
-		},
-		messagesforTEST: () => {
-			return new Promise((resolve) => {
-				connection.then((db) => {
-					db.db(DB).collection('messages').find().toArray((err, res) => {
-						resolve(res);
-					});
-				});
-			});
+		conversations: (root, input) => {
+			// if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
+			// return new Promise((resolve) => {
+			// 	connection.then(async (db) => {
+			// 		let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
+			// 		db.db(DB).collection('conversation').find({ participants: { $in : [1,2,3,4] }).toArray((err, res) => {
+			// 			resolve(res);
+			// 		});
+			// 	});
+			// });
 		}
 	},
 	Mutation: {
 		login: async (root,input)=>{
-			input.number = parseInt(input.number);
+			if (input.number) {input.number = parseInt(input.number)};
 			var user =  await new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('users').findOne({number:input.number},
+					db.db(DB).collection('users').findOne(
+						Object.assign({
+								number:input.number
+							}, {
+								is_deleted:false
+							}),
 					(err, res) => {
 						if (err) throw err;
 						resolve(res);
 					});
 				});
 			});
-			if (!user) {
-				throw new Error('Number not registered')
-			}
+			if (!user) {throw new Error('Number not registered')}
 			const valid = bcrypt.compareSync(input.password, user.password)
-			if (!valid) {
-				throw new Error('Invalid password')
-			}
+			if (!valid) {throw new Error('Invalid password')}
 			user = await new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('users').findOneAndUpdate({number:input.number}, 
+					db.db(DB).collection('users').findOneAndUpdate(user, 
 						{ $set: { last_login: new Date(), } }, 
 						{ returnOriginal: false }, 
 						(err, res) => {
@@ -103,7 +93,7 @@ module.exports = {
 
 		},
 		register: async (root, input) => {
-			input.number = parseInt(input.number);
+			if (input.number) {input.number = parseInt(input.number)};
 			var command = [];
 			Object.keys(input).forEach(function (key) {
 				obj = {}; obj[key] = input[key]; command.push(obj)
@@ -115,19 +105,48 @@ module.exports = {
 					});
 				});
 			});
-			if (checkExist.length) {
-				throw new Error('Number used')
-			}
-			input.password ? (input.password = await bcrypt.hash(input.password, 10)) : '';
+			if (checkExist.length) {throw new Error('Number been used')}
+			if(input.password){input.password = await bcrypt.hash(input.password, 10)};
 			return new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').insertOne(
 						Object.assign(input, {
 							created_at: new Date(),
 							updated_at: new Date(),
-							last_login: null
+							last_login: null,
+							is_deleted: false
 						}), (err, res) => {
 							resolve(res.ops[0]);
+						});
+				});
+			});
+		},
+		deleteUser: async (root, input) => {
+			if (input._id) {input._id = new ObjectId(input._id)};
+			var user =  await new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('users').findOne(
+						Object.assign({
+								_id:input._id
+							}, {
+								is_deleted:false
+							}),
+					(err, res) => {
+						if (err) throw err;
+						resolve(res);
+					});
+				});
+			});
+			if (!user) {throw new Error('Number not registered')}
+			const valid = bcrypt.compareSync(input.password, user.password);
+			if (!valid) {throw new Error('Invalid password')}
+			return new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('users').findOneAndUpdate(user, 
+						{ $set: { is_deleted: true } }, 
+						{ returnOriginal: false }, 
+						(err, res) => {
+							resolve(res.value.is_deleted);
 						});
 				});
 			});
@@ -135,13 +154,23 @@ module.exports = {
 		createMessage: async (root, input) => {
 			return new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('messages').insertOne(
-						Object.assign(input, {
-							created_at: new Date(),
-							is_seen: false,
-							seen_at:null,
-						}), (err, res) => {
-							resolve(res.ops[0]);
+					db.db(DB).collection('conversation').findOneAndUpdate(
+						{
+							participants:[input.author,input.target].sort()
+						},{
+							$push:{
+								messages:{
+									author:input.author,
+									content:input.content,
+									created_at :new Date(),
+									is_seen:[],
+								}
+							}
+						},
+						{ upsert: true, returnOriginal: false },
+						 (err, res) => {
+							 console.log(res);
+							resolve(res.value.messages.pop());
 						});
 				});
 			});

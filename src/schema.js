@@ -8,26 +8,28 @@ module.exports = gql`
 
 	scalar Date
 	scalar Token
+	scalar Number
 
 	type Query {
-		user(_id: ID,name:String,number:String): User
-		users(input:UserInput): [User]
-		messagesforTEST:[Message]
+		user(_id: ID): User
+		conversations(user_id: ID):Conversation
 	}
 	type Mutation {
 		login(number:String!,password:String!): Auth
 		register(name: String!,password:String!,number:String!): User
-		createMessage(sender: Int!,reciever:Int!,content:String!): Message
+		deleteUser(_id:ID,password:String!):Boolean
+		createMessage(target:Int!,author: String!,content:String!): Message
 	}
 
 	type User {
 		_id: ID
 		name: String
 		password:String
-		number: Int
+		number: Number
 		created_at: Date
 		updated_at: Date
 		last_login: Date
+		is_deleted:Boolean
 	}
 
 	type Auth {
@@ -35,18 +37,21 @@ module.exports = gql`
 		user: User
 	}
 
-	type Message{
-		_id: ID
-		sender: Int
-		reciever: Int
-		content: String
-		created_at: Date
-		is_seen: Boolean
-		seen_at: Date
+	type Conversation{
+		_id:ID
+		participants:[Number]
+		messages:[Message]
 	}
 
-	input UserInput{
-		name:String
-		number:Int
+	type Message{
+		author: String
+		content: String
+		created_at: Date
+		is_seen: [MessageSeen]
+	}
+	
+	type MessageSeen{
+		user:User
+		seen_at:Date
 	}
 `;
