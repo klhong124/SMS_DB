@@ -8,24 +8,24 @@ module.exports = gql`
 
 	scalar Date
 	scalar Token
-	scalar Number
 
 	type Query {
 		user(_id: ID): User
-		conversations(user_id: ID):Conversation
+		conversations(user_id: ID):[Conversation]
+		conversation(_id:ID,user_id: ID):Conversation
 	}
 	type Mutation {
 		login(number:String!,password:String!): Auth
 		register(name: String!,password:String!,number:String!): User
 		deleteUser(_id:ID,password:String!):Boolean
-		createMessage(target:Int!,author: String!,content:String!): Message
+		createMessage(target:String!,author: String!,content:String!): Message
 	}
 
 	type User {
 		_id: ID
 		name: String
 		password:String
-		number: Number
+		number: String
 		created_at: Date
 		updated_at: Date
 		last_login: Date
@@ -39,7 +39,7 @@ module.exports = gql`
 
 	type Conversation{
 		_id:ID
-		participants:[Number]
+		participants:[String]
 		messages:[Message]
 	}
 

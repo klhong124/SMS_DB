@@ -9,7 +9,7 @@ const connection = client.connect();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-var collections = ['users','conversation']
+var collections = ['users','conversations']
 connection.then(async (db) => {
 	var exist = await db.db(DB).listCollections().toArray();
 	var array = [];
@@ -38,21 +38,38 @@ module.exports = {
 				});
 			});
 		},
+		conversation: (root, input) => {
+			if (input._id) {input._id = new ObjectId(input._id)};
+			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
+			return new Promise((resolve) => {
+				connection.then(async (db) => {
+					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
+					if (!user) {throw new Error('Number not registered')}
+					db.db(DB).collection('conversations').findOne({
+						_id:input._id,
+						participants:{ $in : [user.number] }
+					},(err, res) => {
+						if (!res) {throw new Error('No Result')}
+						resolve(res);
+					});
+				});
+			});
+		},
 		conversations: (root, input) => {
-			// if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
-			// return new Promise((resolve) => {
-			// 	connection.then(async (db) => {
-			// 		let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
-			// 		db.db(DB).collection('conversation').find({ participants: { $in : [1,2,3,4] }).toArray((err, res) => {
-			// 			resolve(res);
-			// 		});
-			// 	});
-			// });
+			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
+			return new Promise((resolve) => {
+				connection.then(async (db) => {
+					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
+					if (!user) {throw new Error('Number not registered')}
+					db.db(DB).collection('conversations').find({ participants: { $in : [user.number] }}).toArray((err, res) => {
+						resolve(res);
+					});
+				});
+			});
 		}
 	},
 	Mutation: {
 		login: async (root,input)=>{
-			if (input.number) {input.number = parseInt(input.number)};
 			var user =  await new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('users').findOne(
@@ -93,7 +110,6 @@ module.exports = {
 
 		},
 		register: async (root, input) => {
-			if (input.number) {input.number = parseInt(input.number)};
 			var command = [];
 			Object.keys(input).forEach(function (key) {
 				obj = {}; obj[key] = input[key]; command.push(obj)
@@ -152,25 +168,30 @@ module.exports = {
 			});
 		},
 		createMessage: async (root, input) => {
+			let participants = [input.author,input.target].sort();
 			return new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('conversation').findOneAndUpdate(
+					db.db(DB).collection('conversations').findOneAndUpdate(
 						{
-							participants:[input.author,input.target].sort()
+							participants: participants
 						},{
 							$push:{
 								messages:{
-									author:input.author,
-									content:input.content,
-									created_at :new Date(),
-									is_seen:[],
-								}
+									$each:[
+										{
+											author:input.author,
+											content:input.content,
+											created_at :new Date(),
+											is_seen:[],
+										}
+									],
+									$position:0
+								},
 							}
 						},
 						{ upsert: true, returnOriginal: false },
 						 (err, res) => {
-							 console.log(res);
-							resolve(res.value.messages.pop());
+							resolve(res.value.messages[0]);
 						});
 				});
 			});
