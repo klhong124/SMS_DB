@@ -17,8 +17,9 @@ module.exports = gql`
 	type Mutation {
 		login(number:String!,password:String!): Auth
 		register(name: String!,password:String!,number:String!): User
-		deleteUser(_id:ID,password:String!):Boolean
 		createMessage(target:String!,author: String!,content:String!): Message
+		deleteUser(_id:ID!,password:String!):Boolean
+		deleteConversation(_id:ID!,user_id:ID!): Boolean
 	}
 
 	type User {
@@ -39,6 +40,7 @@ module.exports = gql`
 
 	type Conversation{
 		_id:ID
+		is_deleted:[ID]
 		participants:[String]
 		messages:[Message]
 	}
@@ -51,7 +53,7 @@ module.exports = gql`
 	}
 	
 	type MessageSeen{
-		user:User
+		user_id:ID
 		seen_at:Date
 	}
 `;

@@ -47,7 +47,8 @@ module.exports = {
 					if (!user) {throw new Error('Number not registered')}
 					db.db(DB).collection('conversations').findOne({
 						_id:input._id,
-						participants:{ $in : [user.number] }
+						participants:{ $in : [user.number] },
+						is_deleted:{$nin : [user._id]}
 					},(err, res) => {
 						if (!res) {throw new Error('No Result')}
 						resolve(res);
@@ -56,12 +57,14 @@ module.exports = {
 			});
 		},
 		conversations: (root, input) => {
-			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
 			return new Promise((resolve) => {
 				connection.then(async (db) => {
-					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
+					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:new ObjectId(input.user_id)},(err,res)=>{resolve(res)})})
 					if (!user) {throw new Error('Number not registered')}
-					db.db(DB).collection('conversations').find({ participants: { $in : [user.number] }}).toArray((err, res) => {
+					db.db(DB).collection('conversations').find({
+						participants: { $in : [user.number] },
+						is_deleted:{$nin : [user._id]}
+					}).toArray((err, res) => {
 						resolve(res);
 					});
 				});
@@ -167,13 +170,32 @@ module.exports = {
 				});
 			});
 		},
+		deleteConversation: async (root, input) => {
+			return new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('conversations').findOneAndUpdate({
+						_id: new ObjectId(input._id),
+						is_deleted:{$nin : [new ObjectId(input.user_id)]}
+					},{ 
+						$push:{
+							is_deleted:new ObjectId(input.user_id)
+						}
+					},{ returnOriginal: false }, 
+						(err, res) => {
+							if(!res.value){throw new Error('No such conversation')}
+							resolve(res.value.is_deleted.some(i => i.equals(input.user_id)));
+						});
+				});
+			});
+		},
 		createMessage: async (root, input) => {
 			let participants = [input.author,input.target].sort();
 			return new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('conversations').findOneAndUpdate(
 						{
-							participants: participants
+							participants: participants,
+							is_deleted:[]
 						},{
 							$push:{
 								messages:{
