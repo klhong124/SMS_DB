@@ -219,7 +219,6 @@ module.exports = {
 			});
 		},
 		deleteMessage: async (root, input) => {
-			console.log('delmsg');
 			if (input._id) {input._id = new ObjectId(input._id)};
 			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
 			return new Promise((resolve) => {
