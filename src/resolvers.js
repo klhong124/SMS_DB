@@ -45,15 +45,30 @@ module.exports = {
 				connection.then(async (db) => {
 					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:input.user_id},(err,res)=>{resolve(res)})})
 					if (!user) {throw new Error('Number not registered')}
-					db.db(DB).collection('conversations').findOne({
-						_id:input._id,
-						participants:{ $in : [user.number] },
-						is_deleted:{$nin : [user._id]}
-					},(err, res) => {
-						if (!res) {throw new Error('No Result')}
-						resolve(res);
+					db.db(DB).collection('conversations').aggregate([
+						{	$match:{
+								_id:input._id,
+								participants: { $in : [user.number] },
+								is_deleted:{$nin : [user._id]},
+							}
+						},{
+							$project:{
+								participants:1,
+								messages:{
+									$filter:{
+										input : "$messages",
+										as:"message",
+										cond : {
+											$not: { $in: [ user._id, "$$message.is_deleted" ] }
+										}
+									}
+								}
+							}
+						}
+					]).toArray((err, res) => {
+							resolve(res[0]);
+						});
 					});
-				});
 			});
 		},
 		conversations: (root, input) => {
@@ -61,13 +76,29 @@ module.exports = {
 				connection.then(async (db) => {
 					let user = await new Promise((resolve) => { db.db(DB).collection('users').findOne({_id:new ObjectId(input.user_id)},(err,res)=>{resolve(res)})})
 					if (!user) {throw new Error('Number not registered')}
-					db.db(DB).collection('conversations').find({
-						participants: { $in : [user.number] },
-						is_deleted:{$nin : [user._id]}
-					}).toArray((err, res) => {
-						resolve(res);
+					db.db(DB).collection('conversations').aggregate([
+						{	$match:{
+								participants: { $in : [user.number] },
+								is_deleted:{$nin : [user._id]},
+							}
+						},{
+							$project:{
+								participants:1,
+								messages:{
+									$filter:{
+										input : "$messages",
+										as:"message",
+										cond : {
+											$not: { $in: [ user._id, "$$message.is_deleted" ] }
+										}
+									}
+								}
+							}
+						}
+					]).toArray((err, res) => {
+							resolve(res);
+						});
 					});
-				});
 			});
 		}
 	},
@@ -75,13 +106,10 @@ module.exports = {
 		login: async (root,input)=>{
 			var user =  await new Promise((resolve) => {
 				connection.then((db) => {
-					db.db(DB).collection('users').findOne(
-						Object.assign({
-								number:input.number
-							}, {
-								is_deleted:false
-							}),
-					(err, res) => {
+					db.db(DB).collection('users').findOne({
+							number:input.number,
+							is_deleted:false
+					},(err, res) => {
 						if (err) throw err;
 						resolve(res);
 					});
@@ -171,20 +199,42 @@ module.exports = {
 			});
 		},
 		deleteConversation: async (root, input) => {
+			if (input._id) {input._id = new ObjectId(input._id)};
+			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
 			return new Promise((resolve) => {
 				connection.then((db) => {
 					db.db(DB).collection('conversations').findOneAndUpdate({
-						_id: new ObjectId(input._id),
-						is_deleted:{$nin : [new ObjectId(input.user_id)]}
+						_id: input._id,
+						is_deleted:{$nin : [input.user_id]}
 					},{ 
-						$push:{
-							is_deleted:new ObjectId(input.user_id)
+						$addToSet:{
+							is_deleted:input.user_id
 						}
 					},{ returnOriginal: false }, 
 						(err, res) => {
 							if(!res.value){throw new Error('No such conversation')}
-							resolve(res.value.is_deleted.some(i => i.equals(input.user_id)));
+							resolve(res.lastErrorObject.updatedExisting);
 						});
+				});
+			});
+		},
+		deleteMessage: async (root, input) => {
+			console.log('delmsg');
+			if (input._id) {input._id = new ObjectId(input._id)};
+			if (input.user_id) {input.user_id = new ObjectId(input.user_id)};
+			return new Promise((resolve) => {
+				connection.then((db) => {
+					db.db(DB).collection('conversations').findOneAndUpdate({
+						"messages._id":input._id
+					}, { 
+						$addToSet:{
+							"messages.$.is_deleted":input.user_id
+						} 
+					},
+					(err, res) => {
+						if(!res.value){throw new Error('No such message')}
+						resolve(res.lastErrorObject.updatedExisting);
+					});
 				});
 			});
 		},
@@ -201,9 +251,11 @@ module.exports = {
 								messages:{
 									$each:[
 										{
+											_id:new ObjectId(),
 											author:input.author,
 											content:input.content,
 											created_at :new Date(),
+											is_deleted:[],
 											is_seen:[],
 										}
 									],

@@ -18,6 +18,7 @@ module.exports = gql`
 		login(number:String!,password:String!): Auth
 		register(name: String!,password:String!,number:String!): User
 		createMessage(target:String!,author: String!,content:String!): Message
+		deleteMessage(_id:ID!,user_id:ID!): Boolean
 		deleteUser(_id:ID!,password:String!):Boolean
 		deleteConversation(_id:ID!,user_id:ID!): Boolean
 	}
@@ -46,9 +47,11 @@ module.exports = gql`
 	}
 
 	type Message{
+		_id:ID
 		author: String
 		content: String
 		created_at: Date
+		is_deleted:[ID]
 		is_seen: [MessageSeen]
 	}
 	
