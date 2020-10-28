@@ -85,13 +85,15 @@ module.exports = {
 							$project:{
 								participants:1,
 								messages:{
-									$filter:{
-										input : "$messages",
-										as:"message",
-										cond : {
-											$not: { $in: [ user._id, "$$message.is_deleted" ] }
+									$slice:[{
+										$filter:{
+											input : "$messages",
+											as:"message",
+											cond : {
+												$not: { $in: [ user._id, "$$message.is_deleted" ] }
+											}
 										}
-									}
+									},5]
 								}
 							}
 						}

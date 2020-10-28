@@ -10,9 +10,9 @@ module.exports = gql`
 	scalar Token
 
 	type Query {
-		user(_id: ID): User
-		conversations(user_id: ID):[Conversation]
-		conversation(_id:ID,user_id: ID):Conversation
+		user(_id: ID!): User
+		conversations(user_id: ID!):[Conversation]
+		conversation(_id:ID!,user_id: ID!):Conversation
 	}
 	type Mutation {
 		login(number:String!,password:String!): Auth
