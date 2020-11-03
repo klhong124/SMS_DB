@@ -82,6 +82,8 @@ module.exports = {
 								is_deleted:{$nin : [user._id]},
 							}
 						},{
+							$sort: { 'messages.created_at': -1}
+						},{
 							$project:{
 								participants:1,
 								messages:{
@@ -93,7 +95,7 @@ module.exports = {
 												$not: { $in: [ user._id, "$$message.is_deleted" ] }
 											}
 										}
-									},5]
+									},5],
 								}
 							}
 						}
